@@ -1,0 +1,156 @@
+```{r echo=F, warning=FALSE, error=FALSE}
+opts_chunk$set(echo=TRUE, warning=FALSE, message=F, error=FALSE, textwidth=200)
+```
+
+Exploration of the Measured Me dataset - A introduction to R for Quantified-Self Enthusiasts
+===========================================================================================
+
+Data provided by [Measured Me](http://measuredme.com/). Thanks!
+
+This worksheet was created in R Markdown. Markdown is a simple formatting syntax for authoring web pages. You can load up this worksheet in R Studio to run the examples directly and explore yourself!
+
+## Load the data
+
+Read in the csv file.
+```{r}
+mm <- read.csv("measured me data may-oct2013.csv")
+```
+
+Let's take a look at the first few rows.
+```{r}
+head(mm)
+```
+
+It appears that the first column is a date, in an odd format.
+```{r}
+str(mm)
+```
+
+Yes, R isn't recognising it as a date. R thinks it's a categorical variable, or `factor`.
+
+We can parse it so that R may convert it into the `Date` data type. There's a nice library to make this a bit easier. It also looks like the year is missing so we'll add that too.
+```{r}
+library(lubridate)
+mm$Date <- parse_date_time(mm$Date,"md")
+year(mm$Date) <- 2013
+```
+
+Then we can check to see if it worked.
+```{r}
+class(mm$Date)
+summary(mm$Date)
+```
+
+Great. Looks like we're ready to get started.
+
+
+## Exploratory Visualisations
+The excellent [GGplot2 library](http://docs.ggplot2.org/current/) implements the [Grammar of Graphics](http://www.springer.com/statistics/computational+statistics/book/978-0-387-24544-7).
+
+Note the pause between charts is intended for interactive use.
+
+```{r  fig.width=7, fig.height=3, results =FALSE }
+library(ggplot2)
+
+for(var in colnames(mm)[2:ncol(mm)]) {
+  print(qplot(Date, mm[,var], data=mm, geom="path", ylab=var))
+  key <- readline("Press <return> for next plot")
+  if(key!="") { break }
+}
+```
+
+To plot these trends on the same chart we must first [normalise the data](http://en.wikipedia.org/wiki/Database_normalization). The `reshape2` library provides the `melt` function for this purpose.
+
+```{r}
+library(reshape2)
+mm.melted <- melt(mm, id.vars="Date")
+head(mm.melted)
+```
+```{r fig.width=7, fig.height=14}
+ggplot(mm.melted, aes(Date, value)) + geom_path(na.rm=T) + geom_smooth(method="loess", na.rm=T) + facet_wrap(~ variable, ncol=1, scales="free_y")
+```
+
+We can create bivariate plots to investigate the relationships between variables.
+```{r}
+ggplot(mm, aes(Calories, Steps)) + geom_path(aes(colour=as.integer(row.names(mm))), alpha=0.5, na.rm=T)
+ggplot(mm, aes(Stress, MoodInt)) + geom_path(aes(colour=as.integer(row.names(mm))), alpha=0.5, na.rm=T)
+```
+
+## Modeling
+### Correlation Matrices
+
+While bivariate comparisons are insightful, we must produce and inspect `r (ncol(mm)^2) - ncol(mm)` charts to cover the whole dataset. Instead lets measure the correlation systematically.
+
+First we create a matrix, removing the `Date` column. Then we produce a correlation matrix, specifying that we only want to use those observations that are complete (i.e. ignoring those which have missing data). Without this specification we would see `NA` in the results.
+
+```{r}
+mm.matrix <- as.matrix(mm[,2:ncol(mm)])
+cor(mm.matrix, use="complete.obs")
+```
+
+Although this is a good start, we can now see the Pearson correlation coefficient for each pair, it immediately raises the question: which are statistically significant? Enter the `Hmisc` library.
+
+```{r}
+library(Hmisc)
+rcorr(mm.matrix)
+```
+
+This time we have three tables:
+
+- Pearson's `r` (again)
+- The number of observations used (note that `NA` pairs are removed, not rows)
+- The `p` value of the coefficient
+
+We're looking for `p` values lower than `0.05` to indicate statistical significance.
+
+Searching through this table for significant correlations is quite tiresome. Let's use a visualisation to guide our eyes to the main relationships.
+
+On the bottom left of the `correlogram` we see tiles coloured according to the strength (intensity) and direction (blue is positive, and red negative). On the top right we have concentration ellipses and loess smoothness curves.
+
+```{r}
+library(corrgram)
+corrgram(mm.matrix, upper.panel=panel.ellipse)
+```
+
+We can rearrange the plot so that correlated variables are clustered together.
+
+```{r}
+corrgram(mm.matrix, order=T, upper.panel=panel.ellipse)
+```
+
+### Linear Modelling
+Finally we can build a simple model to describe and predict, e.g. Stress.
+
+First we remove the missing observations.
+```{r}
+mm.nona <- na.omit(mm)
+```
+
+Then create a simple linear model, regressing all other variables against Stress.
+```{r}
+stress.lm.basic <- lm(Stress ~ ., mm.nona)
+summary(stress.lm.basic)
+```
+
+Then we can remove insignificant variables from the model through the stepwise algorithm.
+```{r}
+stress.lm.stepped <- step(stress.lm.basic)
+summary(stress.lm.stepped)
+```
+
+Comparing the predict results with the actual.
+```{r}
+plot(fitted.values(stress.lm.stepped), mm.nona$Stress)
+```
+
+Comparing stress with the significant variables.
+```{r fig.width=7, fig.height=14}
+mm.nona.stress <- melt(mm.nona, id.vars="Stress")
+mm.nona.stress.stepped <- mm.nona.stress[mm.nona.steps$variable %in% attr(terms(stress.lm.stepped),"term.labels"),]
+ggplot(mm.nona.stress.stepped, aes(Stress, value)) + geom_hex(bins=10) + geom_smooth(method="lm", na.rm=T) + facet_wrap(~ variable, ncol=1, scales="free_y")
+```
+
+Some diagnostic tests on the model.
+```{r}
+plot(stress.lm.stepped)
+```
