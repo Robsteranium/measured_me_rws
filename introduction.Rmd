@@ -1,0 +1,222 @@
+```{r echo=F, warning=FALSE, error=FALSE}
+opts_chunk$set(echo=TRUE, warning=FALSE, message=F, error=FALSE, textwidth=200)
+```
+
+A Brief Introduction To R
+========================================================
+
+In the first hour we'll do a brief tour of the R programming language. 
+
+R is the most popular programming language for statistics and data analysis.
+
+R is an open-source implementation of the programming language S. S was developed by John Chambers at Bell Laboratories in 1976.
+
+The thing that makes R so powerful is the enormous number of libraries that exist for it. We'll use some of them later.
+
+Using R
+------------------
+R is most often used interactively. That means that we care more about the code written during an R session is not saved, but only the output (e.g. graphics). (Although, to create reproducible research it might make sense to keep the code.)
+
+There are two primary ways of using R:
+- The command line
+- RStudio (open-source IDE)
+
+RStudio is generally more pleasant and powerful.
+
+First Steps
+------------------
+
+```{r}
+5
+print(10)
+6 + 7
+```
+
+An important thing is to be in the right working directory. 
+
+In RStudio, you can set the working directory under 'Session > Set Working Directory'
+
+Or you can set it directly in the console: 
+
+```{r}
+getwd()
+setwd('/Users/briancrain/Documents/quantified_self/R_WORKSHOP/measured_me_rws/')
+```
+
+If you don't know something, the help function is very useful.
+```{r}
+help(mean)
+```
+
+There is also a shortcut.
+```{r}
+?mean
+```
+
+Seeing examples is useful too.
+```{r}
+example(mean)
+```
+
+
+Functions
+------------------
+Functions are extremely important in R.
+
+They are simple to call.
+
+```{r}
+print('Hello')
+```
+
+Let's generate a random number.
+```{r}
+rnorm(1)
+```
+
+Or two.
+```{r}
+rnorm(2)
+```
+
+We can also take the mean of two random numbers.
+
+```{r}
+mean(rnorm(2))
+```
+
+Or we can save the random numbers first and then take the mean.
+
+```{r}
+v <- rnorm(2)
+mean(v)
+```
+
+There two main ways to save variables in R.
+
+```{r}
+v <- rnorm(2)
+```
+This is also possible: rnorm(2) -> v
+
+Calling variables is simple.
+```{r}
+v
+```
+
+Something more fun.
+
+```{r}
+a <- rnorm(10)
+hist(a)
+```
+
+You could also do it like this.
+```{r}
+hist(rnorm(10))
+```
+
+Before we move on, let's write our own function. 
+```{r}
+f <- function(a){
+  a + 1
+}
+f(5)
+```
+R functions always return the last line, but you could also use return explicitly.
+```{r}
+f <- function(a){
+  return(a+1)
+  print('I never get called')
+}
+f(5)
+```
+
+Data Types
+------------------
+### Vectors
+
+The most fundamental data type in R is the vector.
+
+This is the standard way of creating a vector:
+```{r}
+a <- c(7) 
+```
+But this is really a vector too:
+```{r}
+7 
+typeof(7) == typeof(c(7))
+```
+
+You can have lots of elements in a vector. 
+```{r}
+c(7, 4, 9)
+c(1:100)
+```
+
+But they need to be of the same type
+```{r}
+c(7, 'dog')
+```
+As you can see R coeerces both into a string here so the type is the same.
+
+Here is how you access elements of a vector.
+```{r}
+a <- 1:100
+a[1]
+a[56]
+a[3*1:25]
+a[a%%3 == 0]
+```
+Note: Indexing starts at 1 in R, not at 0 like in python, javascript, etc.
+
+What happens when you multiply a vector?
+```{r}
+a*2
+```
+Operations are always applied element-wise. This is very important.
+
+### Lists
+
+We'll just cover lists very briefly. They can contain different data types.
+```{r}
+L <- list(name='Sam', age=7)
+```
+Elements can be accessed by position or name.
+```{r}
+L$name
+L[[2]]
+```
+
+### Data Frames
+
+Data frames are the data type you will work with the most. The graphics package ggplot2, for example, only accepts data frames.
+
+A data frame is a list with class 'data.frame'. Works a bit like a table in a database or like an excel sheet.
+
+Let's create one.
+```{r}
+data.frame(home='Florida', income=10000)
+(accountant <- data.frame(home=c('Florida', 'Berlin'), income=c(10000, 23456), stringsAsFactors = FALSE))
+```
+
+Let's add a row.
+```{r}
+accountant[3,] <- c('Hungary', 43)
+accountant
+```
+
+Let's look at the mean income.
+```{r}
+mean(accountant$income)
+```
+
+
+
+
+You can also embed plots, for example:
+
+```{r fig.width=7, fig.height=6}
+plot(cars)
+```
+
