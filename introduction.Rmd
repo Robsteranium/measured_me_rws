@@ -202,7 +202,7 @@ data.frame(home='Florida', income=10000)
 
 Let's add a row.
 ```{r}
-accountant[3,] <- c('Hungary', 43)
+accountant[3,] <- list('Hungary', 43)
 accountant
 ```
 
@@ -211,12 +211,9 @@ Let's look at the mean income.
 mean(accountant$income)
 ```
 
-
-
-
-You can also embed plots, for example:
-
-```{r fig.width=7, fig.height=6}
-plot(cars)
+We can also access selected parts of the data frame. 
+```{r}
+accountant[1:2,]
 ```
 
+We will learn much more about data frames in hour 2!
