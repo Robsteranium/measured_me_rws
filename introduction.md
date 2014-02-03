@@ -126,7 +126,7 @@ rnorm(1)
 ```
 
 ```
-## [1] -2.038
+## [1] 1.64
 ```
 
 
@@ -137,7 +137,7 @@ rnorm(2)
 ```
 
 ```
-## [1] -0.4968 -1.5164
+## [1] -0.8876  0.7126
 ```
 
 
@@ -149,7 +149,7 @@ mean(rnorm(2))
 ```
 
 ```
-## [1] -0.7103
+## [1] 0.186
 ```
 
 
@@ -162,7 +162,7 @@ mean(v)
 ```
 
 ```
-## [1] -1.047
+## [1] 0.2639
 ```
 
 
@@ -182,7 +182,7 @@ v
 ```
 
 ```
-## [1]  1.5544 -0.2135
+## [1] -0.4937  0.5499
 ```
 
 
@@ -416,7 +416,7 @@ data.frame(home = "Florida", income = 10000)
 Let's add a row.
 
 ```r
-accountant[3, ] <- c("Hungary", 43)
+accountant[3, ] <- list("Hungary", 43)
 accountant
 ```
 
@@ -435,20 +435,21 @@ mean(accountant$income)
 ```
 
 ```
-## [1] NA
+## [1] 11166
 ```
 
 
-
-
-
-You can also embed plots, for example:
-
+We can also access selected parts of the data frame. 
 
 ```r
-plot(cars)
+accountant[1:2, ]
 ```
 
-![plot of chunk unnamed-chunk-29](figure/unnamed-chunk-29.png) 
+```
+##      home income
+## 1 Florida  10000
+## 2  Berlin  23456
+```
 
 
+We will learn much more about data frames in hour 2!
