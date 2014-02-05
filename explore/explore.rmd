@@ -1,0 +1,88 @@
+```{r echo=F, warning=FALSE, error=FALSE}
+opts_chunk$set(echo=TRUE, warning=FALSE, message=F, error=FALSE, textwidth=200)
+```
+
+Exploration of the Measured Me dataset
+======================================
+
+Data provided by [Measured Me](http://measuredme.com/). Thanks!
+
+This worksheet was created in R Markdown. Markdown is a simple formatting syntax for authoring web pages. You can load up this worksheet in R Studio to run the examples directly and explore yourself!
+
+## Metadata
+
+A description of the dataset from the author, Konstantin:
+
+1. Sleep duration and efficiency were tracked using Sleep Time app
+2. Calorie expenditure, moderate and vigorous activity (in minutes), and steps were tracked using Bodymedia
+3. Physical energy, stress, emotions positivity and intensity, happiness and life satisfaction were tracked using 10-point sliding scale in rTracker app.  
+4. Physical Health was measured using 5-point scale (no symptoms= 5, ignorable symptoms = 4, distracting symptoms = 3, debilitating symptoms = 2, sickness = 1). 
+5. The mental alertness was tracked using Mind Metrics app; I then converted the reaction time to Alertness score using formula 10000/alertness_time. 
+6. The cognitive performance was tracked using Stroop Effect app. I converted time of responses to Cognitive score using formula 100/response_time.
+
+## Load the data
+
+Read in the csv file.
+```{r}
+mm <- read.csv("../measured_me.csv")
+```
+
+Let's take a look at the first few rows.
+```{r}
+head(mm)
+```
+
+It appears that the first column is a date, in an odd format.
+```{r}
+str(mm)
+```
+
+Yes, R isn't recognising it as a date. R thinks it's a categorical variable, or `factor`.
+
+We can parse it so that R may convert it into the `Date` data type. There's a nice library to make this a bit easier. It also looks like the year is missing so we'll add that too.
+```{r}
+library(lubridate)
+mm$Date <- parse_date_time(mm$Date,"md")
+year(mm$Date) <- 2013
+```
+
+Then we can check to see if it worked.
+```{r}
+class(mm$Date)
+summary(mm$Date)
+```
+
+Great. Looks like we're ready to get started.
+
+
+## Exploratory Visualisations
+The excellent [GGplot2 library](http://docs.ggplot2.org/current/) implements the [Grammar of Graphics](http://www.springer.com/statistics/computational+statistics/book/978-0-387-24544-7).
+
+Note the pause between charts is intended for interactive use.
+
+```{r  fig.width=7, fig.height=3, results =FALSE }
+library(ggplot2)
+
+for(var in colnames(mm)[2:ncol(mm)]) {
+  print(qplot(Date, mm[,var], data=mm, geom="path", ylab=var))
+  key <- readline("Press <return> for next plot")
+  if(key!="") { break }
+}
+```
+
+To plot these trends on the same chart we must first [normalise the data](http://en.wikipedia.org/wiki/Database_normalization). The `reshape2` library provides the `melt` function for this purpose.
+
+```{r}
+library(reshape2)
+mm.melted <- melt(mm, id.vars="Date")
+head(mm.melted)
+```
+```{r fig.width=7, fig.height=14}
+ggplot(mm.melted, aes(Date, value)) + geom_path(na.rm=T) + geom_smooth(method="loess", na.rm=T) + facet_wrap(~ variable, ncol=1, scales="free_y")
+```
+
+We can create bivariate plots to investigate the relationships between variables.
+```{r}
+ggplot(mm, aes(Calories, Steps)) + geom_path(aes(colour=as.integer(row.names(mm))), alpha=0.5, na.rm=T)
+ggplot(mm, aes(Stress, MoodInt)) + geom_path(aes(colour=as.integer(row.names(mm))), alpha=0.5, na.rm=T)
+```
