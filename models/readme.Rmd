@@ -1,83 +1,15 @@
 ```{r echo=F, warning=FALSE, error=FALSE}
 opts_chunk$set(echo=TRUE, warning=FALSE, message=F, error=FALSE, textwidth=200)
-```
-
-Exploration of the Measured Me dataset - A introduction to R for Quantified-Self Enthusiasts
-===========================================================================================
-
-Data provided by [Measured Me](http://measuredme.com/). Thanks!
-
-This worksheet was created in R Markdown. Markdown is a simple formatting syntax for authoring web pages. You can load up this worksheet in R Studio to run the examples directly and explore yourself!
-
-## Load the data
-
-Read in the csv file.
-```{r}
-mm <- read.csv("measured me data may-oct2013.csv")
-```
-
-Let's take a look at the first few rows.
-```{r}
-head(mm)
-```
-
-It appears that the first column is a date, in an odd format.
-```{r}
-str(mm)
-```
-
-Yes, R isn't recognising it as a date. R thinks it's a categorical variable, or `factor`.
-
-We can parse it so that R may convert it into the `Date` data type. There's a nice library to make this a bit easier. It also looks like the year is missing so we'll add that too.
-```{r}
+mm <- read.csv("../measured_me.csv")
 library(lubridate)
 mm$Date <- parse_date_time(mm$Date,"md")
 year(mm$Date) <- 2013
 ```
 
-Then we can check to see if it worked.
-```{r}
-class(mm$Date)
-summary(mm$Date)
-```
+Modelling the Measured Me dataset
+======================================
 
-Great. Looks like we're ready to get started.
-
-
-## Exploratory Visualisations
-The excellent [GGplot2 library](http://docs.ggplot2.org/current/) implements the [Grammar of Graphics](http://www.springer.com/statistics/computational+statistics/book/978-0-387-24544-7).
-
-Note the pause between charts is intended for interactive use.
-
-```{r  fig.width=7, fig.height=3, results =FALSE }
-library(ggplot2)
-
-for(var in colnames(mm)[2:ncol(mm)]) {
-  print(qplot(Date, mm[,var], data=mm, geom="path", ylab=var))
-  key <- readline("Press <return> for next plot")
-  if(key!="") { break }
-}
-```
-
-To plot these trends on the same chart we must first [normalise the data](http://en.wikipedia.org/wiki/Database_normalization). The `reshape2` library provides the `melt` function for this purpose.
-
-```{r}
-library(reshape2)
-mm.melted <- melt(mm, id.vars="Date")
-head(mm.melted)
-```
-```{r fig.width=7, fig.height=14}
-ggplot(mm.melted, aes(Date, value)) + geom_path(na.rm=T) + geom_smooth(method="loess", na.rm=T) + facet_wrap(~ variable, ncol=1, scales="free_y")
-```
-
-We can create bivariate plots to investigate the relationships between variables.
-```{r}
-ggplot(mm, aes(Calories, Steps)) + geom_path(aes(colour=as.integer(row.names(mm))), alpha=0.5, na.rm=T)
-ggplot(mm, aes(Stress, MoodInt)) + geom_path(aes(colour=as.integer(row.names(mm))), alpha=0.5, na.rm=T)
-```
-
-## Modeling
-### Correlation Matrices
+## Correlation Matrices
 
 While bivariate comparisons are insightful, we must produce and inspect `r (ncol(mm)^2) - ncol(mm)` charts to cover the whole dataset. Instead lets measure the correlation systematically.
 
